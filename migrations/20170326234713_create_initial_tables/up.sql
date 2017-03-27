@@ -24,7 +24,7 @@ CREATE TABLE user_emails (
   created_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   updated_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   user_id UUID NOT NULL REFERENCES users (id),
-  email VARCHAR NOT NULL,
+  email VARCHAR NOT NULL UNIQUE,
   is_primary BOOL NOT NULL
 );
 CREATE TRIGGER update_user_emails_updated_at BEFORE UPDATE ON user_emails FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
@@ -94,11 +94,11 @@ CREATE TABLE game_logs (
 );
 CREATE TRIGGER update_game_logs_updated_at BEFORE UPDATE ON game_logs FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
 
-CREATE TABLE game_log_to (
+CREATE TABLE game_log_targets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   created_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   updated_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   game_log_id UUID NOT NULL REFERENCES game_logs (id),
   user_id UUID NOT NULL REFERENCES users (id)
 );
-CREATE TRIGGER update_game_log_to_updated_at BEFORE UPDATE ON game_log_to FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
+CREATE TRIGGER update_game_log_targets_updated_at BEFORE UPDATE ON game_log_targets FOR EACH ROW EXECUTE PROCEDURE update_updated_at();

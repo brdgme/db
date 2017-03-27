@@ -1,4 +1,4 @@
-DROP TABLE game_log_to;
+DROP TABLE game_log_target;
 DROP TABLE game_logs;
 DROP TABLE game_players;
 DROP TABLE games;

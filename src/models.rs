@@ -2,9 +2,13 @@ use uuid::Uuid;
 use chrono::NaiveDateTime;
 
 use schema::{users, user_emails, user_auth_tokens, game_types, game_versions, games, game_players,
-             game_logs, game_log_to};
+             game_logs, game_log_targets};
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable, Associations)]
+#[has_many(user_emails)]
+#[has_many(user_auth_tokens)]
+#[has_many(game_players)]
+#[has_many(game_log_targets)]
 pub struct User {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -24,7 +28,8 @@ pub struct NewUser<'a> {
     pub login_confirmation_at: Option<&'a NaiveDateTime>,
 }
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(User)]
 pub struct UserEmail {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -42,7 +47,8 @@ pub struct NewUserEmail<'a> {
     pub is_primary: bool,
 }
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(User)]
 pub struct UserAuthToken {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -58,7 +64,8 @@ pub struct NewUserAuthToken<'a> {
     pub token: &'a str,
 }
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable, Associations)]
+#[has_many(game_versions)]
 pub struct GameType {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -72,7 +79,9 @@ pub struct NewGameType<'a> {
     pub name: &'a str,
 }
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(GameType)]
+#[has_many(games)]
 pub struct GameVersion {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -94,7 +103,10 @@ pub struct NewGameVersion<'a> {
     pub is_deprecated: bool,
 }
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(GameVersion)]
+#[has_many(game_players)]
+#[has_many(game_logs)]
 pub struct Game {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -112,7 +124,9 @@ pub struct NewGame<'a> {
     pub game_state: &'a str,
 }
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(Game)]
+#[belongs_to(User)]
 pub struct GamePlayer {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -140,7 +154,9 @@ pub struct NewGamePlayer<'a> {
     pub is_winner: bool,
 }
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(Game)]
+#[has_many(game_log_targets)]
 pub struct GameLog {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -158,8 +174,10 @@ pub struct NewGameLog<'a> {
     pub is_public: bool,
 }
 
-#[derive(Queryable)]
-pub struct GameLogTo {
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(GameLog)]
+#[belongs_to(User)]
+pub struct GameLogTarget {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -168,8 +186,8 @@ pub struct GameLogTo {
 }
 
 #[derive(Insertable)]
-#[table_name="game_log_to"]
-pub struct NewGameLogTo {
+#[table_name="game_log_targets"]
+pub struct NewGameLogTarget {
     pub game_log_id: Uuid,
     pub user_id: Uuid,
 }
