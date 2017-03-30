@@ -1,5 +1,6 @@
 use uuid::Uuid;
 use chrono::NaiveDateTime;
+use postgres::rows::Row;
 
 pub struct User {
     pub id: Uuid,
@@ -9,6 +10,20 @@ pub struct User {
     pub pref_colors: Vec<String>,
     pub login_confirmation: Option<String>,
     pub login_confirmation_at: Option<NaiveDateTime>,
+}
+
+impl User {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            name: row.get(format!("{}name", prefix).as_ref()),
+            pref_colors: row.get(format!("{}pref_colors", prefix).as_ref()),
+            login_confirmation: row.get(format!("{}login_confirmation", prefix).as_ref()),
+            login_confirmation_at: row.get(format!("{}login_confirmation_at", prefix).as_ref()),
+        }
+    }
 }
 
 pub struct NewUser<'a> {
@@ -25,6 +40,19 @@ pub struct UserEmail {
     pub user_id: Uuid,
     pub email: String,
     pub is_primary: bool,
+}
+
+impl UserEmail {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            user_id: row.get(format!("{}user_id", prefix).as_ref()),
+            email: row.get(format!("{}email", prefix).as_ref()),
+            is_primary: row.get(format!("{}is_primary", prefix).as_ref()),
+        }
+    }
 }
 
 pub struct NewUserEmail<'a> {

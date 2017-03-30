@@ -8,29 +8,40 @@ extern crate r2d2_postgres;
 #[macro_use]
 extern crate error_chain;
 
-mod errors {
-    error_chain!{}
+pub mod errors {
+    error_chain!{
+        foreign_links {
+            Postgres(::postgres::error::Error);
+            EnvVar(::std::env::VarError);
+        }
+    }
 }
-
-use errors::*;
-
-use r2d2_postgres::{TlsMode, PostgresConnectionManager};
-
+pub mod query;
 pub mod models;
 
+use r2d2_postgres::{TlsMode, PostgresConnectionManager};
+use std::env;
+use errors::*;
+
 pub struct Connections {
-    pub r: r2d2::Pool<PostgresConnectionManager>,
     pub w: r2d2::Pool<PostgresConnectionManager>,
+    pub r: r2d2::Pool<PostgresConnectionManager>,
 }
 
-pub fn connect(r_addr: &str, w_addr: &str) -> Result<Connections> {
+pub fn connect(w_addr: &str, r_addr: &str) -> Result<Connections> {
     Ok(Connections {
-           r: sub_conn(r_addr)?,
-           w: sub_conn(w_addr)?,
+           w: conn(w_addr)?,
+           r: conn(r_addr)?,
        })
 }
 
-fn sub_conn(addr: &str) -> Result<r2d2::Pool<PostgresConnectionManager>> {
+pub fn connect_env() -> Result<Connections> {
+    let w_addr = env::var("DATABASE_URL").chain_err(|| "DATABASE_URL not set")?;
+    connect(&w_addr,
+            &env::var("DATABASE_URL_R").unwrap_or(w_addr.to_owned()))
+}
+
+fn conn(addr: &str) -> Result<r2d2::Pool<PostgresConnectionManager>> {
     r2d2::Pool::new(r2d2::Config::default(), PostgresConnectionManager::new(addr, TlsMode::None)
         .chain_err(|| "unable to create connection manager")?)
         .chain_err(|| "unable to connect to database")
