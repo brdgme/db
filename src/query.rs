@@ -105,7 +105,7 @@ pub fn generate_user_login_confirmation(user_id: &Uuid, conn: &Connection) -> Re
     match conn.execute("
         UPDATE users
         SET
-            login_confirmation=$1
+            login_confirmation=$1,
             login_confirmation_at=(now() AT TIME ZONE 'utc')
         WHERE id=$2
     ",
