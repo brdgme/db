@@ -7,6 +7,10 @@ extern crate r2d2;
 extern crate r2d2_postgres;
 #[macro_use]
 extern crate error_chain;
+extern crate rand;
+#[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
 
 pub mod errors {
     error_chain!{

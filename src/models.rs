@@ -2,6 +2,7 @@ use uuid::Uuid;
 use chrono::NaiveDateTime;
 use postgres::rows::Row;
 
+#[derive(Debug, PartialEq)]
 pub struct User {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -23,6 +24,18 @@ impl User {
             login_confirmation: row.get(format!("{}login_confirmation", prefix).as_ref()),
             login_confirmation_at: row.get(format!("{}login_confirmation_at", prefix).as_ref()),
         }
+    }
+}
+
+impl Model for User {
+    fn cols() -> Vec<String> {
+        vec!["id".to_string(),
+             "created_at".to_string(),
+             "updated_at".to_string(),
+             "name".to_string(),
+             "pref_colors".to_string(),
+             "login_confirmation".to_string(),
+             "login_confirmation_at".to_string()]
     }
 }
 
@@ -55,8 +68,19 @@ impl UserEmail {
     }
 }
 
+impl Model for UserEmail {
+    fn cols() -> Vec<String> {
+        vec!["id".to_string(),
+             "created_at".to_string(),
+             "updated_at".to_string(),
+             "user_id".to_string(),
+             "email".to_string(),
+             "is_primary".to_string()]
+    }
+}
+
 pub struct NewUserEmail<'a> {
-    pub user_id: Uuid,
+    pub user_id: &'a Uuid,
     pub email: &'a str,
     pub is_primary: bool,
 }
@@ -70,7 +94,7 @@ pub struct UserAuthToken {
 }
 
 pub struct NewUserAuthToken<'a> {
-    pub user_id: Uuid,
+    pub user_id: &'a Uuid,
     pub token: &'a str,
 }
 
@@ -97,7 +121,7 @@ pub struct GameVersion {
 }
 
 pub struct NewGameVersion<'a> {
-    pub game_type_id: Uuid,
+    pub game_type_id: &'a Uuid,
     pub name: &'a str,
     pub uri: &'a str,
     pub is_public: bool,
@@ -114,7 +138,7 @@ pub struct Game {
 }
 
 pub struct NewGame<'a> {
-    pub game_version_id: Uuid,
+    pub game_version_id: &'a Uuid,
     pub is_finished: bool,
     pub game_state: &'a str,
 }
@@ -134,8 +158,8 @@ pub struct GamePlayer {
 }
 
 pub struct NewGamePlayer<'a> {
-    pub game_id: Uuid,
-    pub user_id: Uuid,
+    pub game_id: &'a Uuid,
+    pub user_id: &'a Uuid,
     pub position: i32,
     pub color: &'a str,
     pub has_accepted: bool,
@@ -154,7 +178,7 @@ pub struct GameLog {
 }
 
 pub struct NewGameLog<'a> {
-    pub game_id: Uuid,
+    pub game_id: &'a Uuid,
     pub body: &'a str,
     pub is_public: bool,
 }
@@ -167,7 +191,28 @@ pub struct GameLogTarget {
     pub user_id: Uuid,
 }
 
-pub struct NewGameLogTarget {
-    pub game_log_id: Uuid,
-    pub user_id: Uuid,
+pub struct NewGameLogTarget<'a> {
+    pub game_log_id: &'a Uuid,
+    pub user_id: &'a Uuid,
+}
+
+pub trait Model {
+    fn cols() -> Vec<String>;
+
+    fn select_cols(table: &str, prefix: &str) -> String {
+        let mut table = table.to_string();
+        if !table.is_empty() {
+            table = format!("{}.", table);
+        }
+        Self::cols()
+            .iter()
+            .map(|c| {
+                     format!("{table}{col} AS {prefix}{col}",
+                             table = table,
+                             prefix = prefix,
+                             col = c)
+                 })
+            .collect::<Vec<String>>()
+            .join(", ")
+    }
 }
