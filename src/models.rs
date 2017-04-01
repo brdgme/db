@@ -90,12 +90,30 @@ pub struct UserAuthToken {
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
     pub user_id: Uuid,
-    pub token: String,
+}
+
+impl UserAuthToken {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            user_id: row.get(format!("{}user_id", prefix).as_ref()),
+        }
+    }
+}
+
+impl Model for UserAuthToken {
+    fn cols() -> Vec<String> {
+        vec!["id".to_string(),
+             "created_at".to_string(),
+             "updated_at".to_string(),
+             "user_id".to_string()]
+    }
 }
 
 pub struct NewUserAuthToken<'a> {
     pub user_id: &'a Uuid,
-    pub token: &'a str,
 }
 
 pub struct GameType {

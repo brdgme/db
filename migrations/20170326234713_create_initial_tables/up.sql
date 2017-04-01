@@ -33,8 +33,7 @@ CREATE TABLE user_auth_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   created_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   updated_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
-  user_id UUID NOT NULL REFERENCES users (id),
-  token VARCHAR NOT NULL
+  user_id UUID NOT NULL REFERENCES users (id)
 );
 CREATE TRIGGER update_user_auth_tokens_updated_at BEFORE UPDATE ON user_auth_tokens FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
 
