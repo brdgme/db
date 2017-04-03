@@ -214,6 +214,24 @@ pub struct GamePlayer {
     pub is_winner: bool,
 }
 
+impl GamePlayer {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            game_id: row.get(format!("{}game_id", prefix).as_ref()),
+            user_id: row.get(format!("{}user_id", prefix).as_ref()),
+            position: row.get(format!("{}position", prefix).as_ref()),
+            color: row.get(format!("{}color", prefix).as_ref()),
+            has_accepted: row.get(format!("{}has_accepted", prefix).as_ref()),
+            is_turn: row.get(format!("{}is_turn", prefix).as_ref()),
+            is_eliminated: row.get(format!("{}is_eliminated", prefix).as_ref()),
+            is_winner: row.get(format!("{}is_winner", prefix).as_ref()),
+        }
+    }
+}
+
 pub struct NewGamePlayer<'a> {
     pub game_id: &'a Uuid,
     pub user_id: &'a Uuid,

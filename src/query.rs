@@ -318,6 +318,51 @@ pub fn create_game_type(new_game_type: &NewGameType, conn: &Connection) -> Resul
     Err("error creating game type".into())
 }
 
+pub fn create_game_players(players: &[NewGamePlayer],
+                           conn: &Connection)
+                           -> Result<Vec<GamePlayer>> {
+    let mut created: Vec<GamePlayer> = vec![];
+    for p in players.iter() {
+        created.push(create_game_player(p, conn)?);
+    }
+    Ok(created)
+}
+
+pub fn create_game_player(player: &NewGamePlayer, conn: &Connection) -> Result<GamePlayer> {
+    for row in &conn.query("
+        INSERT INTO game_players (
+            game_id,
+            user_id,
+            position,
+            color,
+            has_accepted,
+            is_turn,
+            is_eliminated,
+            is_winner
+        ) VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6,
+            $7,
+            $8
+        )
+        RETURNING *",
+                           &[&player.game_id,
+                             &player.user_id,
+                             &player.position,
+                             &player.color,
+                             &player.has_accepted,
+                             &player.is_turn,
+                             &player.is_eliminated,
+                             &player.is_winner])? {
+        return Ok(GamePlayer::from_row(&row, ""));
+    }
+    Err("error creating game type".into())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -453,6 +498,54 @@ mod tests {
                                      game_state: "{}",
                                  },
                                 conn)
+                            .is_ok());
+        });
+    }
+
+    #[test]
+    #[ignore]
+    fn create_players_works() {
+        with_db(|conn| {
+            let p1 = create_user_by_email("beefsack@gmail.com", conn).unwrap();
+            let p2 = create_user_by_email("beefsack+two@gmail.com", conn).unwrap();
+            let game_type = create_game_type(&NewGameType { name: "Lost Cities" }, conn).unwrap();
+            let game_version = create_game_version(&NewGameVersion {
+                                                        game_type_id: &game_type.id,
+                                                        uri: "https://example.com/lost-cities-1",
+                                                        name: "v1",
+                                                        is_public: true,
+                                                        is_deprecated: false,
+                                                    },
+                                                   conn)
+                    .unwrap();
+            let game = create_game(&NewGame {
+                                        game_version_id: &game_version.id,
+                                        is_finished: false,
+                                        game_state: "{}",
+                                    },
+                                   conn)
+                    .unwrap();
+            assert!(create_game_players(&[NewGamePlayer {
+                                              game_id: &game.id,
+                                              user_id: &p1.user.id,
+                                              position: 0,
+                                              color: "Green",
+                                              has_accepted: true,
+                                              is_turn: false,
+                                              is_eliminated: false,
+                                              is_winner: false,
+                                          },
+                                          NewGamePlayer {
+                                              game_id: &game.id,
+                                              user_id: &p2.user.id,
+                                              position: 1,
+                                              color: "Red",
+                                              has_accepted: false,
+                                              is_turn: true,
+                                              is_eliminated: false,
+                                              is_winner: false,
+                                          }],
+                                        conn)
                             .is_ok());
         });
     }
