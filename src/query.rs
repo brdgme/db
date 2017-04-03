@@ -69,6 +69,10 @@ pub fn find_or_create_user_by_email(email: &str, conn: &Connection) -> Result<Us
     if let Some(u) = find_user_by_email(email, conn)? {
         return Ok(u);
     }
+    create_user_by_email(email, conn)
+}
+
+pub fn create_user_by_email(email: &str, conn: &Connection) -> Result<UserByEmail> {
     let u = create_user_by_name(email, conn)?;
     let ue = create_user_email(&NewUserEmail {
                                     user_id: &u.id,
@@ -190,6 +194,68 @@ pub fn authenticate(email: &str, token: &Uuid, conn: &Connection) -> Result<Opti
     Ok(None)
 }
 
+pub fn create_game_users(ids: &[Uuid],
+                         emails: &[String],
+                         conn: &Connection)
+                         -> Result<Vec<UserByEmail>> {
+    let mut users: Vec<UserByEmail> = vec![];
+    for id in ids.iter() {
+        users.push(find_user_with_primary_email(id, conn)?
+                       .ok_or_else::<Error, _>(|| "unable to find user".into())?);
+    }
+    for email in emails.iter() {
+        users.push(match find_user_with_primary_email_by_email(email, conn)? {
+                       Some(ube) => ube,
+                       None => create_user_by_email(email, conn)?,
+                   });
+    }
+    Ok(users)
+}
+
+pub fn find_user_with_primary_email(id: &Uuid, conn: &Connection) -> Result<Option<UserByEmail>> {
+    for row in &conn.query(&format!("
+        SELECT {}, {}
+        FROM users u
+        INNER JOIN user_emails ue
+        ON (u.id = ue.user_id)
+        WHERE u.id = $1
+        AND ue.is_primary = TRUE
+        LIMIT 1",
+                                    User::select_cols("u", "u_"),
+                                    UserEmail::select_cols("ue", "ue_")),
+                           &[id])? {
+        return Ok(Some(UserByEmail {
+                           user: User::from_row(&row, "u_"),
+                           user_email: UserEmail::from_row(&row, "ue_"),
+                       }));
+    }
+    Ok(None)
+}
+
+pub fn find_user_with_primary_email_by_email(email: &str,
+                                             conn: &Connection)
+                                             -> Result<Option<UserByEmail>> {
+    for row in &conn.query(&format!("
+        SELECT {}, {}
+        FROM users u
+        INNER JOIN user_emails ue
+        ON (u.id = ue.user_id)
+        INNER JOIN user_emails uef
+        ON (u.id = uef.user_id)
+        WHERE uef.email = $1
+        AND ue.is_primary = TRUE
+        LIMIT 1",
+                                    User::select_cols("u", "u_"),
+                                    UserEmail::select_cols("ue", "ue_")),
+                           &[&email])? {
+        return Ok(Some(UserByEmail {
+                           user: User::from_row(&row, "u_"),
+                           user_email: UserEmail::from_row(&row, "ue_"),
+                       }));
+    }
+    Ok(None)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -271,4 +337,38 @@ mod tests {
                         .is_none());
         });
     }
+
+    #[test]
+    #[ignore]
+    fn find_user_with_primary_email_works() {
+        with_db(|conn| {
+                    let ube = create_user_by_email("beefsack@gmail.com", conn).unwrap();
+                    let found = find_user_with_primary_email(&ube.user.id, conn)
+                        .unwrap()
+                        .unwrap();
+                    assert_eq!(ube.user.id, found.user.id);
+                    assert_eq!("beefsack@gmail.com", ube.user_email.email);
+                });
+    }
+
+    #[test]
+    #[ignore]
+    fn find_user_with_primary_email_by_email_works() {
+        with_db(|conn| {
+            let ube = create_user_by_email("beefsack@gmail.com", conn).unwrap();
+            create_user_email(&NewUserEmail {
+                                   user_id: &ube.user.id,
+                                   email: "beefsack+two@gmail.com",
+                                   is_primary: false,
+                               },
+                              conn)
+                    .unwrap();
+            let found = find_user_with_primary_email_by_email("beefsack+two@gmail.com", conn)
+                .unwrap()
+                .unwrap();
+            assert_eq!(ube.user.id, found.user.id);
+            assert_eq!("beefsack@gmail.com", ube.user_email.email);
+        });
+    }
 }
+
