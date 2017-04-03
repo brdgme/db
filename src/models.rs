@@ -123,6 +123,17 @@ pub struct GameType {
     pub name: String,
 }
 
+impl GameType {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            name: row.get(format!("{}name", prefix).as_ref()),
+        }
+    }
+}
+
 pub struct NewGameType<'a> {
     pub name: &'a str,
 }
@@ -136,6 +147,21 @@ pub struct GameVersion {
     pub uri: String,
     pub is_public: bool,
     pub is_deprecated: bool,
+}
+
+impl GameVersion {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            game_type_id: row.get(format!("{}game_type_id", prefix).as_ref()),
+            name: row.get(format!("{}name", prefix).as_ref()),
+            uri: row.get(format!("{}uri", prefix).as_ref()),
+            is_public: row.get(format!("{}is_public", prefix).as_ref()),
+            is_deprecated: row.get(format!("{}is_deprecated", prefix).as_ref()),
+        }
+    }
 }
 
 pub struct NewGameVersion<'a> {
@@ -153,6 +179,19 @@ pub struct Game {
     pub game_version_id: Uuid,
     pub is_finished: bool,
     pub game_state: String,
+}
+
+impl Game {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            game_version_id: row.get(format!("{}game_version_id", prefix).as_ref()),
+            is_finished: row.get(format!("{}is_finished", prefix).as_ref()),
+            game_state: row.get(format!("{}game_state", prefix).as_ref()),
+        }
+    }
 }
 
 pub struct NewGame<'a> {

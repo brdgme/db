@@ -256,6 +256,68 @@ pub fn find_user_with_primary_email_by_email(email: &str,
     Ok(None)
 }
 
+pub fn create_game(new_game: &NewGame, conn: &Connection) -> Result<Game> {
+    for row in &conn.query("
+        INSERT INTO games (
+            game_version_id,
+            is_finished,
+            game_state
+        ) VALUES (
+            $1,
+            $2,
+            $3
+        )
+        RETURNING *",
+                           &[&new_game.game_version_id,
+                             &new_game.is_finished,
+                             &new_game.game_state])? {
+        return Ok(Game::from_row(&row, ""));
+    }
+    Err("error creating game".into())
+}
+
+pub fn create_game_version(new_game_version: &NewGameVersion,
+                           conn: &Connection)
+                           -> Result<GameVersion> {
+    for row in &conn.query("
+        INSERT INTO game_versions (
+            game_type_id,
+            uri,
+            name,
+            is_public,
+            is_deprecated
+        ) VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5
+        )
+        RETURNING *",
+                           &[&new_game_version.game_type_id,
+                             &new_game_version.uri,
+                             &new_game_version.name,
+                             &new_game_version.is_public,
+                             &new_game_version.is_deprecated])? {
+        return Ok(GameVersion::from_row(&row, ""));
+    }
+    Err("error creating game version".into())
+}
+
+pub fn create_game_type(new_game_type: &NewGameType, conn: &Connection) -> Result<GameType> {
+    for row in &conn.query("
+        INSERT INTO game_types (
+            name
+        ) VALUES (
+            $1
+        )
+        RETURNING *",
+                           &[&new_game_type.name])? {
+        return Ok(GameType::from_row(&row, ""));
+    }
+    Err("error creating game type".into())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -370,5 +432,28 @@ mod tests {
             assert_eq!("beefsack@gmail.com", ube.user_email.email);
         });
     }
-}
 
+    #[test]
+    #[ignore]
+    fn create_game_works() {
+        with_db(|conn| {
+            let game_type = create_game_type(&NewGameType { name: "Lost Cities" }, conn).unwrap();
+            let game_version = create_game_version(&NewGameVersion {
+                                                        game_type_id: &game_type.id,
+                                                        uri: "https://example.com/lost-cities-1",
+                                                        name: "v1",
+                                                        is_public: true,
+                                                        is_deprecated: false,
+                                                    },
+                                                   conn)
+                    .unwrap();
+            assert!(create_game(&NewGame {
+                                     game_version_id: &game_version.id,
+                                     is_finished: false,
+                                     game_state: "{}",
+                                 },
+                                conn)
+                            .is_ok());
+        });
+    }
+}
