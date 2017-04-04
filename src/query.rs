@@ -204,7 +204,8 @@ pub fn create_game_with_users(game_version: &Uuid,
                               opponent_emails: &[String],
                               conn: &Connection)
                               -> Result<(Game, Vec<UserByEmail>)> {
-    let creator = find_user(creator_id, conn).chain_err(|| "could not find creator")?.ok_or_else::<Error, _>(|| "could not find creator".into())?;
+    let creator = find_user(creator_id, conn).chain_err(|| "could not find creator")?
+        .ok_or_else::<Error, _>(|| "could not find creator".into())?;
     let users = create_game_users(opponent_ids, opponent_emails, conn).chain_err(|| "could not create game users")?;
     let mut color_prefs = vec![creator.pref_colors];
     color_prefs.extend(users.iter().map(|u| u.user.pref_colors.clone()));

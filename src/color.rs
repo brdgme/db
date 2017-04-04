@@ -16,15 +16,13 @@ pub enum Color {
     BlueGrey,
 }
 
-pub static COLORS: &'static [Color] = &[
-    Color::Green,
-    Color::Red,
-    Color::Blue,
-    Color::Amber,
-    Color::Purple,
-    Color::Brown,
-    Color::BlueGrey,
-];
+pub static COLORS: &'static [Color] = &[Color::Green,
+                                        Color::Red,
+                                        Color::Blue,
+                                        Color::Amber,
+                                        Color::Purple,
+                                        Color::Brown,
+                                        Color::BlueGrey];
 
 impl Into<brdgme_color::Color> for Color {
     fn into(self) -> brdgme_color::Color {
