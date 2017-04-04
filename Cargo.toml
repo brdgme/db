@@ -8,6 +8,7 @@ brdgme-std = { git = "https://github.com/brdgme/std.git" }
 chrono = "*"
 uuid = { version = "*", features = ["v4"] }
 postgres = { version = "*", features = ["with-uuid", "with-chrono"] }
+postgres-derive = "*"
 r2d2 = "*"
 r2d2_postgres = "*"
 error-chain = "*"

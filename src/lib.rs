@@ -2,7 +2,10 @@
 
 extern crate uuid;
 extern crate chrono;
+#[macro_use]
 extern crate postgres;
+#[macro_use]
+extern crate postgres_derive;
 extern crate r2d2;
 extern crate r2d2_postgres;
 #[macro_use]

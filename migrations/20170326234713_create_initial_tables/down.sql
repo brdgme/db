@@ -7,4 +7,5 @@ DROP TABLE game_types;
 DROP TABLE user_auth_tokens;
 DROP TABLE user_emails;
 DROP TABLE users;
+DROP TYPE color;
 DROP EXTENSION "uuid-ossp";

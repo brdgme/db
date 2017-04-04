@@ -525,28 +525,28 @@ mod tests {
                                     },
                                    conn)
                     .unwrap();
-            assert!(create_game_players(&[NewGamePlayer {
-                                              game_id: &game.id,
-                                              user_id: &p1.user.id,
-                                              position: 0,
-                                              color: "Green",
-                                              has_accepted: true,
-                                              is_turn: false,
-                                              is_eliminated: false,
-                                              is_winner: false,
-                                          },
-                                          NewGamePlayer {
-                                              game_id: &game.id,
-                                              user_id: &p2.user.id,
-                                              position: 1,
-                                              color: "Red",
-                                              has_accepted: false,
-                                              is_turn: true,
-                                              is_eliminated: false,
-                                              is_winner: false,
-                                          }],
-                                        conn)
-                            .is_ok());
+            create_game_players(&[NewGamePlayer {
+                                      game_id: &game.id,
+                                      user_id: &p1.user.id,
+                                      position: 0,
+                                      color: &Color::Green,
+                                      has_accepted: true,
+                                      is_turn: false,
+                                      is_eliminated: false,
+                                      is_winner: false,
+                                  },
+                                  NewGamePlayer {
+                                      game_id: &game.id,
+                                      user_id: &p2.user.id,
+                                      position: 1,
+                                      color: &Color::Red,
+                                      has_accepted: false,
+                                      is_turn: true,
+                                      is_eliminated: false,
+                                      is_winner: false,
+                                  }],
+                                conn)
+                    .unwrap();
         });
     }
 }

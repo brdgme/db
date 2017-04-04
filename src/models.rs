@@ -2,13 +2,25 @@ use uuid::Uuid;
 use chrono::NaiveDateTime;
 use postgres::rows::Row;
 
+#[derive(Debug, ToSql, FromSql, PartialEq)]
+#[postgres(name = "color")]
+pub enum Color {
+    Green,
+    Red,
+    Blue,
+    Amber,
+    Purple,
+    Brown,
+    BlueGrey,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct User {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
     pub name: String,
-    pub pref_colors: Vec<String>,
+    pub pref_colors: Vec<Color>,
     pub login_confirmation: Option<String>,
     pub login_confirmation_at: Option<NaiveDateTime>,
 }
@@ -41,7 +53,7 @@ impl Model for User {
 
 pub struct NewUser<'a> {
     pub name: &'a str,
-    pub pref_colors: &'a [&'a str],
+    pub pref_colors: &'a [&'a Color],
     pub login_confirmation: Option<&'a str>,
     pub login_confirmation_at: Option<&'a NaiveDateTime>,
 }
@@ -207,7 +219,7 @@ pub struct GamePlayer {
     pub game_id: Uuid,
     pub user_id: Uuid,
     pub position: i32,
-    pub color: String,
+    pub color: Color,
     pub has_accepted: bool,
     pub is_turn: bool,
     pub is_eliminated: bool,
@@ -236,7 +248,7 @@ pub struct NewGamePlayer<'a> {
     pub game_id: &'a Uuid,
     pub user_id: &'a Uuid,
     pub position: i32,
-    pub color: &'a str,
+    pub color: &'a Color,
     pub has_accepted: bool,
     pub is_turn: bool,
     pub is_eliminated: bool,
