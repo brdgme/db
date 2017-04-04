@@ -14,6 +14,8 @@ extern crate rand;
 #[macro_use]
 extern crate lazy_static;
 
+extern crate brdgme_color;
+
 pub mod errors {
     error_chain!{
         foreign_links {
@@ -24,6 +26,7 @@ pub mod errors {
 }
 pub mod query;
 pub mod models;
+pub mod color;
 
 use r2d2_postgres::{TlsMode, PostgresConnectionManager};
 use std::env;

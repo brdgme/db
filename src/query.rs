@@ -3,8 +3,12 @@ use uuid::Uuid;
 use rand::{self, Rng};
 use chrono::{Duration, UTC};
 
+use std::collections::HashSet;
+use std::iter::FromIterator;
+
 use errors::*;
 use models::*;
+use color;
 
 lazy_static! {
     static ref CONFIRMATION_EXPIRY: Duration = Duration::minutes(30);
@@ -194,6 +198,20 @@ pub fn authenticate(email: &str, token: &Uuid, conn: &Connection) -> Result<Opti
     Ok(None)
 }
 
+pub fn create_game_with_users(game_version: &Uuid,
+                              creator_id: &Uuid,
+                              opponent_ids: &[Uuid],
+                              opponent_emails: &[String],
+                              conn: &Connection)
+                              -> Result<(Game, Vec<UserByEmail>)> {
+    let creator = find_user(creator_id, conn).chain_err(|| "could not find creator")?.ok_or_else::<Error, _>(|| "could not find creator".into())?;
+    let users = create_game_users(opponent_ids, opponent_emails, conn).chain_err(|| "could not create game users")?;
+    let mut color_prefs = vec![creator.pref_colors];
+    color_prefs.extend(users.iter().map(|u| u.user.pref_colors.clone()));
+    let player_colors = color::choose(&HashSet::from_iter(color::COLORS.iter()), &color_prefs);
+    Err("not implemented".into())
+}
+
 pub fn create_game_users(ids: &[Uuid],
                          emails: &[String],
                          conn: &Connection)
@@ -366,6 +384,7 @@ pub fn create_game_player(player: &NewGamePlayer, conn: &Connection) -> Result<G
 #[cfg(test)]
 mod tests {
     use super::*;
+    use color::Color;
     use models::NewUserEmail;
     use postgres::Connection;
     use Connections;

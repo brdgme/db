@@ -2,17 +2,7 @@ use uuid::Uuid;
 use chrono::NaiveDateTime;
 use postgres::rows::Row;
 
-#[derive(Debug, ToSql, FromSql, PartialEq)]
-#[postgres(name = "color")]
-pub enum Color {
-    Green,
-    Red,
-    Blue,
-    Amber,
-    Purple,
-    Brown,
-    BlueGrey,
-}
+use color::Color;
 
 #[derive(Debug, PartialEq)]
 pub struct User {

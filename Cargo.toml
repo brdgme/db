@@ -5,6 +5,7 @@ authors = ["Michael Alexander <beefsack@gmail.com>"]
 
 [dependencies]
 brdgme-std = { git = "https://github.com/brdgme/std.git" }
+brdgme-color = { git = "https://github.com/brdgme/color.git" }
 chrono = "*"
 uuid = { version = "*", features = ["v4"] }
 postgres = { version = "*", features = ["with-uuid", "with-chrono"] }

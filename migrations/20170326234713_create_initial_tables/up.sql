@@ -90,6 +90,7 @@ CREATE TABLE game_players (
   is_turn BOOL NOT NULL,
   is_eliminated BOOL NOT NULL,
   is_winner BOOL NOT NULL,
+  UNIQUE (game_id, user_id),
   UNIQUE (game_id, color),
   UNIQUE (game_id, position)
 );
