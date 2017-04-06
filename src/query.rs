@@ -77,13 +77,15 @@ pub fn find_or_create_user_by_email(email: &str, conn: &GenericConnection) -> Re
 }
 
 pub fn create_user_by_email(email: &str, conn: &GenericConnection) -> Result<UserByEmail> {
-    let u = create_user_by_name(email, conn)?;
+    let trans = conn.transaction()?;
+    let u = create_user_by_name(email, &trans)?;
     let ue = create_user_email(&NewUserEmail {
                                     user_id: &u.id,
                                     email: email,
                                     is_primary: true,
                                 },
-                               conn)?;
+                               &trans)?;
+    trans.commit()?;
     Ok(UserByEmail {
            user: u,
            user_email: ue,
@@ -133,14 +135,17 @@ pub fn generate_user_login_confirmation(user_id: &Uuid,
 }
 
 pub fn user_login_request(email: &str, conn: &GenericConnection) -> Result<String> {
-    let user = find_or_create_user_by_email(email, conn)?.user;
+    let trans = conn.transaction()?;
+    let user = find_or_create_user_by_email(email, &trans)?.user;
 
-    Ok(match (user.login_confirmation, user.login_confirmation_at) {
-           (Some(ref uc), Some(at)) if at + *CONFIRMATION_EXPIRY > UTC::now().naive_utc() => {
-               uc.to_owned()
-           }
-           _ => generate_user_login_confirmation(&user.id, conn)?,
-       })
+    let confirmation = match (user.login_confirmation, user.login_confirmation_at) {
+        (Some(ref uc), Some(at)) if at + *CONFIRMATION_EXPIRY > UTC::now().naive_utc() => {
+            uc.to_owned()
+        }
+        _ => generate_user_login_confirmation(&user.id, &trans)?,
+    };
+    trans.commit()?;
+    Ok(confirmation)
 }
 
 pub fn user_login_confirm(email: &str,
@@ -218,10 +223,11 @@ pub fn create_game_with_users(new_game: &NewGame,
                               opponent_emails: &[String],
                               conn: &GenericConnection)
                               -> Result<CreatedGame> {
+    let trans = conn.transaction()?;
     // Find or create users.
-    let creator = find_user(creator_id, conn).chain_err(|| "could not find creator")?
+    let creator = find_user(creator_id, &trans).chain_err(|| "could not find creator")?
         .ok_or_else::<Error, _>(|| "could not find creator".into())?;
-    let opponents = create_game_users(opponent_ids, opponent_emails, conn)
+    let opponents = create_game_users(opponent_ids, opponent_emails, &trans)
         .chain_err(|| "could not create game users")?;
     let mut users: Vec<User> = opponents.iter().map(|o| o.user.clone()).collect();
     users.push(creator);
@@ -235,7 +241,7 @@ pub fn create_game_with_users(new_game: &NewGame,
     let player_colors = color::choose(&HashSet::from_iter(color::COLORS.iter()), &color_prefs);
 
     // Create game record.
-    let game = create_game(new_game, conn).chain_err(|| "could not create new game")?;
+    let game = create_game(new_game, &trans).chain_err(|| "could not create new game")?;
 
     // Create a player record for each user.
     let mut players: Vec<GamePlayer> = vec![];
@@ -250,8 +256,9 @@ pub fn create_game_with_users(new_game: &NewGame,
                                              is_eliminated: eliminated.contains(&pos),
                                              is_winner: winners.contains(&pos),
                                          },
-                                        conn).chain_err(|| "could not create game player")?);
+                                        &trans).chain_err(|| "could not create game player")?);
     }
+    trans.commit()?;
     Ok(CreatedGame {
            game: game,
            opponents: opponents,
@@ -263,17 +270,19 @@ pub fn create_game_users(ids: &[Uuid],
                          emails: &[String],
                          conn: &GenericConnection)
                          -> Result<Vec<UserByEmail>> {
+    let trans = conn.transaction()?;
     let mut users: Vec<UserByEmail> = vec![];
     for id in ids.iter() {
-        users.push(find_user_with_primary_email(id, conn)?
+        users.push(find_user_with_primary_email(id, &trans)?
                        .ok_or_else::<Error, _>(|| "unable to find user".into())?);
     }
     for email in emails.iter() {
-        users.push(match find_user_with_primary_email_by_email(email, conn)? {
+        users.push(match find_user_with_primary_email_by_email(email, &trans)? {
                        Some(ube) => ube,
                        None => create_user_by_email(email, conn)?,
                    });
     }
+    trans.commit()?;
     Ok(users)
 }
 
@@ -388,10 +397,12 @@ pub fn create_game_type(new_game_type: &NewGameType, conn: &GenericConnection) -
 pub fn create_game_players(players: &[NewGamePlayer],
                            conn: &GenericConnection)
                            -> Result<Vec<GamePlayer>> {
+    let trans = conn.transaction()?;
     let mut created: Vec<GamePlayer> = vec![];
     for p in players.iter() {
-        created.push(create_game_player(p, conn)?);
+        created.push(create_game_player(p, &trans)?);
     }
+    trans.commit()?;
     Ok(created)
 }
 
