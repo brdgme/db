@@ -1,4 +1,4 @@
-use postgres::Connection;
+use postgres::GenericConnection;
 use uuid::Uuid;
 use rand::{self, Rng};
 use chrono::{Duration, UTC};
@@ -20,7 +20,7 @@ pub struct UserByEmail {
     pub user_email: UserEmail,
 }
 
-pub fn create_user_by_name(name: &str, conn: &Connection) -> Result<User> {
+pub fn create_user_by_name(name: &str, conn: &GenericConnection) -> Result<User> {
     for row in &conn.query("
         INSERT INTO users
         (
@@ -36,7 +36,7 @@ pub fn create_user_by_name(name: &str, conn: &Connection) -> Result<User> {
     Err("unable to create user".into())
 }
 
-pub fn find_user(id: &Uuid, conn: &Connection) -> Result<Option<User>> {
+pub fn find_user(id: &Uuid, conn: &GenericConnection) -> Result<Option<User>> {
     for row in &conn.query("
         SELECT *
         FROM users
@@ -49,7 +49,7 @@ pub fn find_user(id: &Uuid, conn: &Connection) -> Result<Option<User>> {
     Ok(None)
 }
 
-pub fn find_user_by_email(email: &str, conn: &Connection) -> Result<Option<UserByEmail>> {
+pub fn find_user_by_email(email: &str, conn: &GenericConnection) -> Result<Option<UserByEmail>> {
     for row in &conn.query(&format!("
         SELECT
             {}, {}
@@ -69,14 +69,14 @@ pub fn find_user_by_email(email: &str, conn: &Connection) -> Result<Option<UserB
     Ok(None)
 }
 
-pub fn find_or_create_user_by_email(email: &str, conn: &Connection) -> Result<UserByEmail> {
+pub fn find_or_create_user_by_email(email: &str, conn: &GenericConnection) -> Result<UserByEmail> {
     if let Some(u) = find_user_by_email(email, conn)? {
         return Ok(u);
     }
     create_user_by_email(email, conn)
 }
 
-pub fn create_user_by_email(email: &str, conn: &Connection) -> Result<UserByEmail> {
+pub fn create_user_by_email(email: &str, conn: &GenericConnection) -> Result<UserByEmail> {
     let u = create_user_by_name(email, conn)?;
     let ue = create_user_email(&NewUserEmail {
                                     user_id: &u.id,
@@ -90,7 +90,7 @@ pub fn create_user_by_email(email: &str, conn: &Connection) -> Result<UserByEmai
        })
 }
 
-pub fn create_user_email(ue: &NewUserEmail, conn: &Connection) -> Result<UserEmail> {
+pub fn create_user_email(ue: &NewUserEmail, conn: &GenericConnection) -> Result<UserEmail> {
     for row in &conn.query("
         INSERT INTO user_emails
         (
@@ -115,7 +115,9 @@ fn rand_code() -> String {
             rng.gen::<usize>() % 100000)
 }
 
-pub fn generate_user_login_confirmation(user_id: &Uuid, conn: &Connection) -> Result<String> {
+pub fn generate_user_login_confirmation(user_id: &Uuid,
+                                        conn: &GenericConnection)
+                                        -> Result<String> {
     let code = rand_code();
     match conn.execute("
         UPDATE users
@@ -130,7 +132,7 @@ pub fn generate_user_login_confirmation(user_id: &Uuid, conn: &Connection) -> Re
     }
 }
 
-pub fn user_login_request(email: &str, conn: &Connection) -> Result<String> {
+pub fn user_login_request(email: &str, conn: &GenericConnection) -> Result<String> {
     let user = find_or_create_user_by_email(email, conn)?.user;
 
     Ok(match (user.login_confirmation, user.login_confirmation_at) {
@@ -143,7 +145,7 @@ pub fn user_login_request(email: &str, conn: &Connection) -> Result<String> {
 
 pub fn user_login_confirm(email: &str,
                           confirmation: &str,
-                          conn: &Connection)
+                          conn: &GenericConnection)
                           -> Result<Option<UserAuthToken>> {
     let user = match find_user_by_email(email, conn)? {
         Some(ube) => ube.user,
@@ -158,7 +160,7 @@ pub fn user_login_confirm(email: &str,
        })
 }
 
-pub fn create_auth_token(user_id: &Uuid, conn: &Connection) -> Result<UserAuthToken> {
+pub fn create_auth_token(user_id: &Uuid, conn: &GenericConnection) -> Result<UserAuthToken> {
     for row in &conn.query("
         INSERT INTO user_auth_tokens
         (
@@ -172,7 +174,10 @@ pub fn create_auth_token(user_id: &Uuid, conn: &Connection) -> Result<UserAuthTo
     Err("could not create user auth token".into())
 }
 
-pub fn authenticate(email: &str, token: &Uuid, conn: &Connection) -> Result<Option<UserByEmail>> {
+pub fn authenticate(email: &str,
+                    token: &Uuid,
+                    conn: &GenericConnection)
+                    -> Result<Option<UserByEmail>> {
     for row in &conn.query(&format!("
         SELECT
             {}, {}, {}
@@ -199,9 +204,9 @@ pub fn authenticate(email: &str, token: &Uuid, conn: &Connection) -> Result<Opti
 }
 
 pub struct CreatedGame {
-    game: Game,
-    opponents: Vec<UserByEmail>,
-    players: Vec<GamePlayer>,
+    pub game: Game,
+    pub opponents: Vec<UserByEmail>,
+    pub players: Vec<GamePlayer>,
 }
 
 pub fn create_game_with_users(new_game: &NewGame,
@@ -211,7 +216,7 @@ pub fn create_game_with_users(new_game: &NewGame,
                               creator_id: &Uuid,
                               opponent_ids: &[Uuid],
                               opponent_emails: &[String],
-                              conn: &Connection)
+                              conn: &GenericConnection)
                               -> Result<CreatedGame> {
     // Find or create users.
     let creator = find_user(creator_id, conn).chain_err(|| "could not find creator")?
@@ -256,7 +261,7 @@ pub fn create_game_with_users(new_game: &NewGame,
 
 pub fn create_game_users(ids: &[Uuid],
                          emails: &[String],
-                         conn: &Connection)
+                         conn: &GenericConnection)
                          -> Result<Vec<UserByEmail>> {
     let mut users: Vec<UserByEmail> = vec![];
     for id in ids.iter() {
@@ -272,7 +277,9 @@ pub fn create_game_users(ids: &[Uuid],
     Ok(users)
 }
 
-pub fn find_user_with_primary_email(id: &Uuid, conn: &Connection) -> Result<Option<UserByEmail>> {
+pub fn find_user_with_primary_email(id: &Uuid,
+                                    conn: &GenericConnection)
+                                    -> Result<Option<UserByEmail>> {
     for row in &conn.query(&format!("
         SELECT {}, {}
         FROM users u
@@ -293,7 +300,7 @@ pub fn find_user_with_primary_email(id: &Uuid, conn: &Connection) -> Result<Opti
 }
 
 pub fn find_user_with_primary_email_by_email(email: &str,
-                                             conn: &Connection)
+                                             conn: &GenericConnection)
                                              -> Result<Option<UserByEmail>> {
     for row in &conn.query(&format!("
         SELECT {}, {}
@@ -316,7 +323,7 @@ pub fn find_user_with_primary_email_by_email(email: &str,
     Ok(None)
 }
 
-pub fn create_game(new_game: &NewGame, conn: &Connection) -> Result<Game> {
+pub fn create_game(new_game: &NewGame, conn: &GenericConnection) -> Result<Game> {
     for row in &conn.query("
         INSERT INTO games (
             game_version_id,
@@ -337,7 +344,7 @@ pub fn create_game(new_game: &NewGame, conn: &Connection) -> Result<Game> {
 }
 
 pub fn create_game_version(new_game_version: &NewGameVersion,
-                           conn: &Connection)
+                           conn: &GenericConnection)
                            -> Result<GameVersion> {
     for row in &conn.query("
         INSERT INTO game_versions (
@@ -364,7 +371,7 @@ pub fn create_game_version(new_game_version: &NewGameVersion,
     Err("error creating game version".into())
 }
 
-pub fn create_game_type(new_game_type: &NewGameType, conn: &Connection) -> Result<GameType> {
+pub fn create_game_type(new_game_type: &NewGameType, conn: &GenericConnection) -> Result<GameType> {
     for row in &conn.query("
         INSERT INTO game_types (
             name
@@ -379,7 +386,7 @@ pub fn create_game_type(new_game_type: &NewGameType, conn: &Connection) -> Resul
 }
 
 pub fn create_game_players(players: &[NewGamePlayer],
-                           conn: &Connection)
+                           conn: &GenericConnection)
                            -> Result<Vec<GamePlayer>> {
     let mut created: Vec<GamePlayer> = vec![];
     for p in players.iter() {
@@ -388,7 +395,7 @@ pub fn create_game_players(players: &[NewGamePlayer],
     Ok(created)
 }
 
-pub fn create_game_player(player: &NewGamePlayer, conn: &Connection) -> Result<GamePlayer> {
+pub fn create_game_player(player: &NewGamePlayer, conn: &GenericConnection) -> Result<GamePlayer> {
     for row in &conn.query("
         INSERT INTO game_players (
             game_id,
@@ -428,7 +435,7 @@ mod tests {
     use super::*;
     use color::Color;
     use models::NewUserEmail;
-    use postgres::Connection;
+    use postgres::GenericConnection;
     use Connections;
     use connect_env;
 
@@ -446,13 +453,10 @@ mod tests {
     }
 
     fn with_db<F>(closure: F)
-        where F: Fn(&Connection)
+        where F: Fn(&GenericConnection)
     {
         let ref conn = *CONN.w.get().unwrap();
-        let trans = conn.transaction().unwrap();
-        trans.set_rollback();
-        closure(conn);
-        trans.finish().unwrap();
+        closure(&conn.transaction().unwrap());
     }
 
     #[test]
@@ -611,4 +615,3 @@ mod tests {
         });
     }
 }
-
