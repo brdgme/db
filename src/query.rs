@@ -3,7 +3,9 @@ use uuid::Uuid;
 use rand::{self, Rng};
 use chrono::{Duration, UTC};
 
-use std::collections::HashSet;
+use brdgme_cmd::CliLog;
+
+use std::collections::{HashSet, HashMap};
 use std::iter::FromIterator;
 
 use errors::*;
@@ -370,6 +372,123 @@ pub fn update_game_winners(id: &Uuid,
         players.push(GamePlayer::from_row(&row, ""));
     }
     Ok(players)
+}
+
+pub fn create_game_logs_from_cli(game_id: &Uuid,
+                                 logs: Vec<CliLog>,
+                                 conn: &GenericConnection)
+                                 -> Result<Vec<CreatedGameLog>> {
+    let mut player_id_by_position: HashMap<usize, Uuid> = HashMap::new();
+    let trans = conn.transaction()?;
+    for p in find_game_players_by_game(game_id, &trans)? {
+        player_id_by_position.insert(p.position as usize, p.id);
+    }
+    let mut created: Vec<CreatedGameLog> = vec![];
+    for l in logs {
+        let mut player_to: Vec<Uuid> = vec![];
+        for t in l.to {
+            player_to.push(player_id_by_position
+                               .get(&t)
+                               .ok_or_else::<Error, _>(|| {
+                                                           "no player with that position exists"
+                                                               .into()
+                                                       })?
+                               .to_owned());
+        }
+        created.push(create_game_log(&NewGameLog {
+                                          created_at: &l.at,
+                                          game_id: game_id,
+                                          body: &l.content,
+                                          is_public: l.public,
+                                      },
+                                     &player_to,
+                                     &trans)?);
+    }
+    trans.commit()?;
+    Ok(created)
+}
+
+pub fn find_game_players_by_game(game_id: &Uuid,
+                                 conn: &GenericConnection)
+                                 -> Result<Vec<GamePlayer>> {
+    let mut players: Vec<GamePlayer> = vec![];
+    for row in &conn.query("
+        SELECT *
+        FROM game_players
+        WHERE game_id=$1",
+                           &[game_id])? {
+        players.push(GamePlayer::from_row(&row, ""));
+    }
+    Ok(players)
+}
+
+pub struct CreatedGameLog {
+    pub game_log: GameLog,
+    pub targets: Vec<GameLogTarget>,
+}
+pub fn create_game_log(log: &NewGameLog,
+                       to: &[Uuid],
+                       conn: &GenericConnection)
+                       -> Result<CreatedGameLog> {
+    let trans = conn.transaction()?;
+    let mut created_log: Option<GameLog> = None;
+    for row in &trans.query("
+        INSERT INTO game_log (
+            game_id,
+            body,
+            is_public
+        ) VALUES (
+            $1,
+            $2,
+            $3
+        )
+        RETURNING *",
+                           &[&log.game_id, &log.body, &log.is_public])? {
+        created_log = Some(GameLog::from_row(&row, ""));
+    }
+    let gl = created_log.ok_or_else::<Error, _>(|| "error creating game log".into())?;
+    let targets = create_game_log_targets(&gl.id, to, &trans)?;
+    trans.commit()?;
+    Ok(CreatedGameLog {
+           game_log: gl,
+           targets: targets,
+       })
+}
+
+pub fn create_game_log_targets(log_id: &Uuid,
+                               user_ids: &[Uuid],
+                               conn: &GenericConnection)
+                               -> Result<Vec<GameLogTarget>> {
+    let trans = conn.transaction()?;
+    let mut created = vec![];
+    for id in user_ids {
+        created.push(create_game_log_target(&NewGameLogTarget {
+                                                 game_log_id: log_id,
+                                                 user_id: id,
+                                             },
+                                            &trans)?);
+    }
+    trans.commit()?;
+    Ok(created)
+}
+
+pub fn create_game_log_target(new_target: &NewGameLogTarget,
+                              conn: &GenericConnection)
+                              -> Result<GameLogTarget> {
+    for row in &conn.query("
+        INSERT INTO game_log_targets (
+            game_log_id,
+            user_id
+        ) VALUES (
+            $1,
+            $2
+        )
+        RETURNING *",
+                           &[&new_target.game_log_id, &new_target.user_id])? {
+        return Ok(GameLogTarget::from_row(&row, ""));
+    }
+    Err("error creating game log target".into())
+
 }
 
 pub fn create_game_users(ids: &[Uuid],

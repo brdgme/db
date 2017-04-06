@@ -254,7 +254,21 @@ pub struct GameLog {
     pub is_public: bool,
 }
 
+impl GameLog {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            game_id: row.get(format!("{}game_id", prefix).as_ref()),
+            body: row.get(format!("{}body", prefix).as_ref()),
+            is_public: row.get(format!("{}is_public", prefix).as_ref()),
+        }
+    }
+}
+
 pub struct NewGameLog<'a> {
+    pub created_at: &'a NaiveDateTime,
     pub game_id: &'a Uuid,
     pub body: &'a str,
     pub is_public: bool,
@@ -266,6 +280,18 @@ pub struct GameLogTarget {
     pub updated_at: NaiveDateTime,
     pub game_log_id: Uuid,
     pub user_id: Uuid,
+}
+
+impl GameLogTarget {
+    pub fn from_row(row: &Row, prefix: &str) -> Self {
+        Self {
+            id: row.get(format!("{}id", prefix).as_ref()),
+            created_at: row.get(format!("{}created_at", prefix).as_ref()),
+            updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
+            game_log_id: row.get(format!("{}game_log_id", prefix).as_ref()),
+            user_id: row.get(format!("{}user_id", prefix).as_ref()),
+        }
+    }
 }
 
 pub struct NewGameLogTarget<'a> {

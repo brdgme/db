@@ -14,6 +14,7 @@ extern crate rand;
 #[macro_use]
 extern crate lazy_static;
 
+extern crate brdgme_cmd;
 extern crate brdgme_color;
 
 pub mod errors {
@@ -21,6 +22,7 @@ pub mod errors {
         foreign_links {
             Postgres(::postgres::error::Error);
             EnvVar(::std::env::VarError);
+            Chrono(::chrono::ParseError);
         }
     }
 }
