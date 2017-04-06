@@ -266,6 +266,112 @@ pub fn create_game_with_users(new_game: &NewGame,
        })
 }
 
+pub struct UpdatedGame {
+    pub game: Option<Game>,
+    pub whose_turn: Vec<GamePlayer>,
+    pub eliminated: Vec<GamePlayer>,
+    pub winners: Vec<GamePlayer>,
+}
+pub fn update_game_and_players(game_id: &Uuid,
+                               update: &NewGame,
+                               whose_turn: &[usize],
+                               eliminated: &[usize],
+                               winners: &[usize],
+                               conn: &GenericConnection)
+                               -> Result<UpdatedGame> {
+    let trans = conn.transaction()?;
+    let result = UpdatedGame {
+        game: update_game(game_id, update, &trans)?,
+        whose_turn: update_game_whose_turn(game_id, whose_turn, &trans)?,
+        eliminated: update_game_eliminated(game_id, eliminated, &trans)?,
+        winners: update_game_winners(game_id, winners, &trans)?,
+    };
+    trans.commit()?;
+    Ok(result)
+}
+
+pub fn update_game(id: &Uuid, update: &NewGame, conn: &GenericConnection) -> Result<Option<Game>> {
+    for row in &conn.query("
+        UPDATE games
+        SET
+            game_version_id=$1,
+            is_finished=$2,
+            game_state=$3
+        WHERE id=$4
+        RETURNING *",
+                           &[&update.game_version_id,
+                             &update.is_finished,
+                             &update.game_state,
+                             &id])? {
+        return Ok(Some(Game::from_row(&row, "")));
+    }
+    Ok(None)
+}
+
+fn position_update_clause(positions: &[usize]) -> String {
+    if positions.is_empty() {
+        "1".to_string()
+    } else {
+        format!("(position IN ({}))",
+                positions
+                    .iter()
+                    .map(|p| p.to_string())
+                    .collect::<Vec<String>>()
+                    .join(","))
+    }
+}
+
+pub fn update_game_whose_turn(id: &Uuid,
+                              positions: &[usize],
+                              conn: &GenericConnection)
+                              -> Result<Vec<GamePlayer>> {
+    let mut players: Vec<GamePlayer> = vec![];
+    for row in &conn.query(&format!("
+        UPDATE game_players
+        SET is_turn={}
+        WHERE game_id=$1
+        RETURNING *",
+                                    position_update_clause(positions)),
+                           &[&id])? {
+        players.push(GamePlayer::from_row(&row, ""));
+    }
+    Ok(players)
+}
+
+pub fn update_game_eliminated(id: &Uuid,
+                              positions: &[usize],
+                              conn: &GenericConnection)
+                              -> Result<Vec<GamePlayer>> {
+    let mut players: Vec<GamePlayer> = vec![];
+    for row in &conn.query(&format!("
+        UPDATE game_players
+        SET is_eliminated={}
+        WHERE game_id=$1
+        RETURNING *",
+                                    position_update_clause(positions)),
+                           &[&id])? {
+        players.push(GamePlayer::from_row(&row, ""));
+    }
+    Ok(players)
+}
+
+pub fn update_game_winners(id: &Uuid,
+                           positions: &[usize],
+                           conn: &GenericConnection)
+                           -> Result<Vec<GamePlayer>> {
+    let mut players: Vec<GamePlayer> = vec![];
+    for row in &conn.query(&format!("
+        UPDATE game_players
+        SET is_winner={}
+        WHERE game_id=$1
+        RETURNING *",
+                                    position_update_clause(positions)),
+                           &[&id])? {
+        players.push(GamePlayer::from_row(&row, ""));
+    }
+    Ok(players)
+}
+
 pub fn create_game_users(ids: &[Uuid],
                          emails: &[String],
                          conn: &GenericConnection)
