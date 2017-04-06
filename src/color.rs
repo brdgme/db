@@ -89,7 +89,7 @@ pub fn choose(available: &HashSet<&Color>, prefs: &[Vec<Color>]) -> Vec<Color> {
     }
     let mut left = remaining.drain();
     let mut res = vec![];
-    for p in 0..prefs.len() {
+    for p in 0..rem_prefs.len() {
         res.push(assigned
                      .get(&p)
                      .cloned()
