@@ -4,7 +4,7 @@ use postgres::rows::Row;
 
 use color::Color;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct User {
     pub id: Uuid,
     pub created_at: NaiveDateTime,

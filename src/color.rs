@@ -93,7 +93,7 @@ pub fn choose(available: &HashSet<&Color>, prefs: &[Vec<Color>]) -> Vec<Color> {
         res.push(assigned
                      .get(&p)
                      .cloned()
-                     .unwrap_or_else(|| left.next().cloned().unwrap_or_else(|| Color::Green))
+                     .unwrap_or_else(|| left.next().cloned().unwrap())
                      .to_owned());
     }
     res.extend(tail);

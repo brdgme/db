@@ -8,7 +8,7 @@ use std::iter::FromIterator;
 
 use errors::*;
 use models::*;
-use color;
+use color::{self, Color};
 
 lazy_static! {
     static ref CONFIRMATION_EXPIRY: Duration = Duration::minutes(30);
@@ -198,19 +198,60 @@ pub fn authenticate(email: &str, token: &Uuid, conn: &Connection) -> Result<Opti
     Ok(None)
 }
 
-pub fn create_game_with_users(game_version: &Uuid,
+pub struct CreatedGame {
+    game: Game,
+    opponents: Vec<UserByEmail>,
+    players: Vec<GamePlayer>,
+}
+
+pub fn create_game_with_users(new_game: &NewGame,
+                              whose_turn: &[usize],
+                              eliminated: &[usize],
+                              winners: &[usize],
                               creator_id: &Uuid,
                               opponent_ids: &[Uuid],
                               opponent_emails: &[String],
                               conn: &Connection)
-                              -> Result<(Game, Vec<UserByEmail>)> {
+                              -> Result<CreatedGame> {
+    // Find or create users.
     let creator = find_user(creator_id, conn).chain_err(|| "could not find creator")?
         .ok_or_else::<Error, _>(|| "could not find creator".into())?;
-    let users = create_game_users(opponent_ids, opponent_emails, conn).chain_err(|| "could not create game users")?;
-    let mut color_prefs = vec![creator.pref_colors];
-    color_prefs.extend(users.iter().map(|u| u.user.pref_colors.clone()));
+    let opponents = create_game_users(opponent_ids, opponent_emails, conn)
+        .chain_err(|| "could not create game users")?;
+    let mut users: Vec<User> = opponents.iter().map(|o| o.user.clone()).collect();
+    users.push(creator);
+
+    // Randomise the users so player order is random.
+    let mut rnd = rand::thread_rng();
+    rnd.shuffle(&mut users);
+
+    // Assign colors to each player using preferences.
+    let color_prefs: Vec<Vec<Color>> = users.iter().map(|u| u.pref_colors.clone()).collect();
     let player_colors = color::choose(&HashSet::from_iter(color::COLORS.iter()), &color_prefs);
-    Err("not implemented".into())
+
+    // Create game record.
+    let game = create_game(new_game, conn).chain_err(|| "could not create new game")?;
+
+    // Create a player record for each user.
+    let mut players: Vec<GamePlayer> = vec![];
+    for (pos, ref user) in users.iter().enumerate() {
+        players.push(create_game_player(&NewGamePlayer {
+                                             game_id: &game.id,
+                                             user_id: &user.id,
+                                             position: pos as i32,
+                                             color: &player_colors[pos],
+                                             has_accepted: &user.id == creator_id,
+                                             is_turn: whose_turn.contains(&pos),
+                                             is_eliminated: eliminated.contains(&pos),
+                                             is_winner: winners.contains(&pos),
+                                         },
+                                        conn).chain_err(|| "could not create game player")?);
+    }
+    Ok(CreatedGame {
+           game: game,
+           opponents: opponents,
+           players: players,
+       })
 }
 
 pub fn create_game_users(ids: &[Uuid],
@@ -570,3 +611,4 @@ mod tests {
         });
     }
 }
+
