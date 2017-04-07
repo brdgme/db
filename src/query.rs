@@ -450,7 +450,7 @@ pub fn create_game_log(log: &NewGameLog,
     let mut created_log: Option<GameLog> = None;
     for row in &trans
                     .query("
-        INSERT INTO game_log (
+        INSERT INTO game_logs (
             game_id,
             body,
             is_public
