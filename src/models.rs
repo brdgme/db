@@ -252,6 +252,7 @@ pub struct GameLog {
     pub game_id: Uuid,
     pub body: String,
     pub is_public: bool,
+    pub logged_at: NaiveDateTime,
 }
 
 impl GameLog {
@@ -263,15 +264,16 @@ impl GameLog {
             game_id: row.get(format!("{}game_id", prefix).as_ref()),
             body: row.get(format!("{}body", prefix).as_ref()),
             is_public: row.get(format!("{}is_public", prefix).as_ref()),
+            logged_at: row.get(format!("{}logged_at", prefix).as_ref()),
         }
     }
 }
 
 pub struct NewGameLog<'a> {
-    pub created_at: &'a NaiveDateTime,
     pub game_id: &'a Uuid,
     pub body: &'a str,
     pub is_public: bool,
+    pub logged_at: &'a NaiveDateTime,
 }
 
 pub struct GameLogTarget {

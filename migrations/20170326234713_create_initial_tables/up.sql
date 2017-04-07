@@ -102,7 +102,8 @@ CREATE TABLE game_logs (
   updated_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   game_id UUID NOT NULL REFERENCES games (id),
   body TEXT NOT NULL,
-  is_public BOOL NOT NULL
+  is_public BOOL NOT NULL,
+  logged_at TIMESTAMP NOT NULL
 );
 CREATE TRIGGER update_game_logs_updated_at BEFORE UPDATE ON game_logs FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
 

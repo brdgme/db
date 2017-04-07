@@ -396,10 +396,10 @@ pub fn create_game_logs_from_cli(game_id: &Uuid,
                                .to_owned());
         }
         created.push(create_game_log(&NewGameLog {
-                                          created_at: &l.at,
                                           game_id: game_id,
                                           body: &l.content,
                                           is_public: l.public,
+                                          logged_at: &l.at,
                                       },
                                      &player_to,
                                      &trans)?);
