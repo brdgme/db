@@ -522,7 +522,7 @@ pub fn create_game_users(ids: &[Uuid],
     for email in emails.iter() {
         users.push(match find_user_with_primary_email_by_email(email, &trans)? {
                        Some(ube) => ube,
-                       None => create_user_by_email(email, conn)?,
+                       None => create_user_by_email(email, &trans)?,
                    });
     }
     trans.commit()?;
