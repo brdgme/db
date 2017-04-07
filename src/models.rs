@@ -1,7 +1,6 @@
 use uuid::Uuid;
 use chrono::NaiveDateTime;
 use postgres::rows::Row;
-use serde_json::Value as JsonValue;
 
 use color::Color;
 
@@ -181,7 +180,7 @@ pub struct Game {
     pub updated_at: NaiveDateTime,
     pub game_version_id: Uuid,
     pub is_finished: bool,
-    pub game_state: JsonValue,
+    pub game_state: String,
 }
 
 impl Game {
@@ -200,7 +199,7 @@ impl Game {
 pub struct NewGame<'a> {
     pub game_version_id: &'a Uuid,
     pub is_finished: bool,
-    pub game_state: &'a JsonValue,
+    pub game_state: &'a str,
 }
 
 pub struct GamePlayer {

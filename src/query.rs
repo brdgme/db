@@ -690,7 +690,6 @@ mod tests {
     use color::Color;
     use models::NewUserEmail;
     use postgres::GenericConnection;
-    use serde_json::Value as JsonValue;
     use Connections;
     use connect_env;
 
@@ -815,7 +814,7 @@ mod tests {
             assert!(create_game(&NewGame {
                                      game_version_id: &game_version.id,
                                      is_finished: false,
-                                     game_state: &JsonValue::String("blah".to_string()),
+                                     game_state: "blah",
                                  },
                                 conn)
                             .is_ok());
@@ -841,7 +840,7 @@ mod tests {
             let game = create_game(&NewGame {
                                         game_version_id: &game_version.id,
                                         is_finished: false,
-                                        game_state: &JsonValue::String("egg".to_string()),
+                                        game_state: "egg",
                                     },
                                    conn)
                     .unwrap();

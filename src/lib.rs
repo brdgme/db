@@ -13,7 +13,6 @@ extern crate error_chain;
 extern crate rand;
 #[macro_use]
 extern crate lazy_static;
-extern crate serde_json;
 
 extern crate brdgme_cmd;
 extern crate brdgme_color;
