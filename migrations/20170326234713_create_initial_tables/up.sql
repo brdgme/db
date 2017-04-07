@@ -112,6 +112,6 @@ CREATE TABLE game_log_targets (
   created_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   updated_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   game_log_id UUID NOT NULL REFERENCES game_logs (id),
-  user_id UUID NOT NULL REFERENCES users (id)
+  player_id UUID NOT NULL REFERENCES game_players (id)
 );
 CREATE TRIGGER update_game_log_targets_updated_at BEFORE UPDATE ON game_log_targets FOR EACH ROW EXECUTE PROCEDURE update_updated_at();

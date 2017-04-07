@@ -281,7 +281,7 @@ pub struct GameLogTarget {
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
     pub game_log_id: Uuid,
-    pub user_id: Uuid,
+    pub player_id: Uuid,
 }
 
 impl GameLogTarget {
@@ -291,14 +291,14 @@ impl GameLogTarget {
             created_at: row.get(format!("{}created_at", prefix).as_ref()),
             updated_at: row.get(format!("{}updated_at", prefix).as_ref()),
             game_log_id: row.get(format!("{}game_log_id", prefix).as_ref()),
-            user_id: row.get(format!("{}user_id", prefix).as_ref()),
+            player_id: row.get(format!("{}player_id", prefix).as_ref()),
         }
     }
 }
 
 pub struct NewGameLogTarget<'a> {
     pub game_log_id: &'a Uuid,
-    pub user_id: &'a Uuid,
+    pub player_id: &'a Uuid,
 }
 
 pub trait Model {

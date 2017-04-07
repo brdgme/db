@@ -476,15 +476,15 @@ pub fn create_game_log(log: &NewGameLog,
 }
 
 pub fn create_game_log_targets(log_id: &Uuid,
-                               user_ids: &[Uuid],
+                               player_ids: &[Uuid],
                                conn: &GenericConnection)
                                -> Result<Vec<GameLogTarget>> {
     let trans = conn.transaction()?;
     let mut created = vec![];
-    for id in user_ids {
+    for id in player_ids {
         created.push(create_game_log_target(&NewGameLogTarget {
                                                  game_log_id: log_id,
-                                                 user_id: id,
+                                                 player_id: id,
                                              },
                                             &trans)?);
     }
@@ -498,13 +498,13 @@ pub fn create_game_log_target(new_target: &NewGameLogTarget,
     for row in &conn.query("
         INSERT INTO game_log_targets (
             game_log_id,
-            user_id
+            player_id
         ) VALUES (
             $1,
             $2
         )
         RETURNING *",
-                           &[&new_target.game_log_id, &new_target.user_id])? {
+                           &[&new_target.game_log_id, &new_target.player_id])? {
         return Ok(GameLogTarget::from_row(&row, ""));
     }
     Err("error creating game log target".into())
