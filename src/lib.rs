@@ -47,15 +47,17 @@ pub fn connect(w_addr: &str, r_addr: &str) -> Result<Connections> {
 }
 
 pub fn connect_env() -> Result<Connections> {
-    let w_addr = env::var("DATABASE_URL").chain_err(|| "DATABASE_URL not set")?;
+    let w_addr = env::var("DATABASE_URL")
+        .chain_err(|| "DATABASE_URL not set")?;
     connect(&w_addr,
             &env::var("DATABASE_URL_R").unwrap_or(w_addr.to_owned()))
 }
 
 fn conn(addr: &str) -> Result<r2d2::Pool<PostgresConnectionManager>> {
-    r2d2::Pool::new(r2d2::Config::default(), PostgresConnectionManager::new(addr, TlsMode::None)
-        .chain_err(|| "unable to create connection manager")?)
-        .chain_err(|| "unable to connect to database")
+    r2d2::Pool::new(r2d2::Config::default(),
+                    PostgresConnectionManager::new(addr, TlsMode::None)
+                        .chain_err(|| "unable to create connection manager")?)
+            .chain_err(|| "unable to connect to database")
 }
 
 #[cfg(test)]

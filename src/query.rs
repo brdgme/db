@@ -210,6 +210,19 @@ pub fn authenticate(email: &str,
     Ok(None)
 }
 
+pub fn find_game_version(id: &Uuid, conn: &GenericConnection) -> Result<Option<GameVersion>> {
+    for row in &conn.query("
+        SELECT *
+        FROM game_versions
+        WHERE id=$1
+        LIMIT 1
+    ",
+                           &[id])? {
+        return Ok(Some(GameVersion::from_row(&row, "")));
+    }
+    Ok(None)
+}
+
 pub struct CreatedGame {
     pub game: Game,
     pub opponents: Vec<UserByEmail>,
@@ -227,7 +240,8 @@ pub fn create_game_with_users(new_game: &NewGame,
                               -> Result<CreatedGame> {
     let trans = conn.transaction()?;
     // Find or create users.
-    let creator = find_user(creator_id, &trans).chain_err(|| "could not find creator")?
+    let creator = find_user(creator_id, &trans)
+        .chain_err(|| "could not find creator")?
         .ok_or_else::<Error, _>(|| "could not find creator".into())?;
     let opponents = create_game_users(opponent_ids, opponent_emails, &trans)
         .chain_err(|| "could not create game users")?;
@@ -243,7 +257,8 @@ pub fn create_game_with_users(new_game: &NewGame,
     let player_colors = color::choose(&HashSet::from_iter(color::COLORS.iter()), &color_prefs);
 
     // Create game record.
-    let game = create_game(new_game, &trans).chain_err(|| "could not create new game")?;
+    let game = create_game(new_game, &trans)
+        .chain_err(|| "could not create new game")?;
 
     // Create a player record for each user.
     let mut players: Vec<GamePlayer> = vec![];
@@ -258,7 +273,8 @@ pub fn create_game_with_users(new_game: &NewGame,
                                              is_eliminated: eliminated.contains(&pos),
                                              is_winner: winners.contains(&pos),
                                          },
-                                        &trans).chain_err(|| "could not create game player")?);
+                                        &trans)
+                             .chain_err(|| "could not create game player")?);
     }
     trans.commit()?;
     Ok(CreatedGame {
@@ -432,7 +448,8 @@ pub fn create_game_log(log: &NewGameLog,
                        -> Result<CreatedGameLog> {
     let trans = conn.transaction()?;
     let mut created_log: Option<GameLog> = None;
-    for row in &trans.query("
+    for row in &trans
+                    .query("
         INSERT INTO game_log (
             game_id,
             body,
@@ -446,7 +463,8 @@ pub fn create_game_log(log: &NewGameLog,
                            &[&log.game_id, &log.body, &log.is_public])? {
         created_log = Some(GameLog::from_row(&row, ""));
     }
-    let gl = created_log.ok_or_else::<Error, _>(|| "error creating game log".into())?;
+    let gl = created_log
+        .ok_or_else::<Error, _>(|| "error creating game log".into())?;
     let targets = create_game_log_targets(&gl.id, to, &trans)?;
     trans.commit()?;
     Ok(CreatedGameLog {
