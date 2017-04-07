@@ -3,7 +3,7 @@ use uuid::Uuid;
 use rand::{self, Rng};
 use chrono::{Duration, UTC};
 
-use brdgme_cmd::CliLog;
+use brdgme_cmd::cli::CliLog;
 
 use std::collections::{HashSet, HashMap};
 use std::iter::FromIterator;
