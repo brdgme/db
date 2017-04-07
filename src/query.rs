@@ -453,14 +453,16 @@ pub fn create_game_log(log: &NewGameLog,
         INSERT INTO game_logs (
             game_id,
             body,
-            is_public
+            is_public,
+            logged_at
         ) VALUES (
             $1,
             $2,
-            $3
+            $3,
+            $4
         )
         RETURNING *",
-                           &[&log.game_id, &log.body, &log.is_public])? {
+                           &[&log.game_id, &log.body, &log.is_public, &log.logged_at])? {
         created_log = Some(GameLog::from_row(&row, ""));
     }
     let gl = created_log
