@@ -74,7 +74,7 @@ CREATE TABLE games (
   updated_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   game_version_id UUID NOT NULL REFERENCES game_versions (id),
   is_finished BOOL NOT NULL,
-  game_state TEXT NOT NULL
+  game_state JSONB NOT NULL
 );
 CREATE TRIGGER update_games_updated_at BEFORE UPDATE ON games FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
 

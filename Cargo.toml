@@ -9,10 +9,11 @@ brdgme-color = { git = "https://github.com/brdgme/color.git" }
 brdgme-cmd = { git = "https://github.com/brdgme/cmd.git" }
 chrono = "*"
 uuid = { version = "*", features = ["v4"] }
-postgres = { version = "*", features = ["with-uuid", "with-chrono"] }
+postgres = { version = "*", features = ["with-uuid", "with-chrono", "with-serde_json"] }
 postgres-derive = "*"
 r2d2 = "*"
 r2d2_postgres = "*"
 error-chain = "*"
 rand = "*"
 lazy_static = "*"
+serde_json = "*"
